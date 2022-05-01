@@ -1,7 +1,4 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from json import dumps
-from DataBase import DataBase, Message
-import time
 from typing import List
 
 database = DataBase()
@@ -44,15 +41,15 @@ class MessangerServer(BaseHTTPRequestHandler):
         return True
 
     def create_user(self, request):
-        # create_user/username-password
-        username, password = request[1].split("-")
+        # username-password/create_username
+        username, password = request[0].split("-")
         database.create_user(username=username,
                              password=password)
         return True
 
     def upload_message(self, request):
         # username-password/upload_message/channel/message
-        channel, text, time = request[2], request[3], time.time()
+        channel, text, time = request[2], request[3], time._time()
         database.upload_message(channel_name=channel,
                                 message=Message(time=time,
                                                 username=self.username,

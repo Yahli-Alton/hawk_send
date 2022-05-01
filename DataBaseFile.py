@@ -1,4 +1,3 @@
-import json
 import time
 from typing import List
 
@@ -31,7 +30,7 @@ class Channel:
         return final_messages
 
     def sort_channel(self):
-        self.messages.sort(key=lambda x: x.time)
+        self.messages.sort(key=lambda x: x._time)
         return True
 
 
