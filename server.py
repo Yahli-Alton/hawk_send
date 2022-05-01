@@ -63,4 +63,4 @@ class MessangerServer(BaseHTTPRequestHandler):
         channel_name = request[2]
         channel: dict = database.download_channel(channel_name=channel_name)
 
-        return channel
+        # TODO: write the channel in the server file

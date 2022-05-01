@@ -1,6 +1,5 @@
 import json
 import time
-
 from typing import List
 
 
@@ -9,6 +8,7 @@ class Message:
         self.time = time
         self.username = username
         self.text = text
+
 
 class Channel:
     def __init__(self, users, channel_name):
