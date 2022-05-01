@@ -1,10 +1,9 @@
 import time
-from typing import List
 
 
 class Message:
-    def __int__(self, time, username, text):
-        self.time = time
+    def __init__(self, _time, username, text):
+        self._time = _time
         self.username = username
         self.text = text
 
@@ -22,8 +21,8 @@ class Channel:
         self.sort_channel()
         final_messages = []
         for message in self.messages:
-            _time = time.localtime(message.time)
-            time_str = f"data: {_time.tm_year, _time.tm_mon, _time.tm_day}\nhour: {_time.tm_hour}\nminute: {_time.tm_min}"
+            _time = time.localtime(message._time)
+            time_str = f"data: {_time.tm_year, _time.tm_mon, _time.tm_mday}\nhour: {_time.tm_hour}\nminute: {_time.tm_min}"
             final_messages.append({"time": time_str,
                                    "username": message.username,
                                    "text": message.text})
@@ -42,13 +41,14 @@ class User:
 
 
 class DataBase:
-    def __init(self):
+    def __init__(self):
         # {username: User}
         self.users: dict = {}
         # {"channel_name": channel}
-        self.channels: dict = []
+        self.channels: dict = {}
 
     def create_user(self, username, password):
+        print(self.users)
         if username not in self.users.keys():
             self.users[username] = User(username, password, [])
             return True
@@ -66,4 +66,7 @@ class DataBase:
 
     def download_channel(self, channel_name: str):
         return self.channels[channel_name].download_channel()
+
+    def get_password(self, username):
+        return self.users[username].password
 
