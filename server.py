@@ -1,6 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from json import dumps
-from DataBase import DataBase
+from DataBase import DataBase, Message
 import time
 from typing import List
 
@@ -38,8 +38,9 @@ class MessangerServer(BaseHTTPRequestHandler):
         return True
 
     def create_channel(self, request):
-        # /username-password/create_channel/channel_name
-        database.create_channel(channel_name=request[2])
+        # /username-password/create_channel/channel_name/username-username....
+        database.create_channel(channel_name=request[2],
+                                users=request[3].split("-"))
         return True
 
     def create_user(self, request):
@@ -51,10 +52,11 @@ class MessangerServer(BaseHTTPRequestHandler):
 
     def upload_message(self, request):
         # username-password/upload_message/channel/message
-        channel, message, time = request[2], request[3], str(time.time())
-        database.upload_message(channel=channel,
-                                message=message,
-                                username=self.username)
+        channel, text, time = request[2], request[3], time.time()
+        database.upload_message(channel_name=channel,
+                                message=Message(time=time,
+                                                username=self.username,
+                                                text=text))
 
     def download_channel(self, request: str):
         # username-password/download_channel/channel_name
