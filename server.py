@@ -1,4 +1,5 @@
 import json
+import socket
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from DataBaseFile import *
 import time
@@ -46,16 +47,14 @@ class MessangerServer(BaseHTTPRequestHandler):
         return True
 
     def create_channel(self, data):
-        # /username-password/create_channel/channel_name/username-username....
         print("in create_channel")
-        database.create_channel(channel_name=data["channel_name"],
-                                users=data["users"].split("-"))
+        channel_id = database.create_channel(channel_name=data["channel_name"],
+                                             usernames=data["users"])
 
-        self.wfile.write(bytes(f"created_channel", "utf-8"))
+        self.wfile.write(bytes(str(channel_id), "utf-8"))
         return True
 
     def create_user(self, data):
-        # create_user/username-password
         username, password = data["username"], data["password"]
         database.create_user(username=username,
                              password=password)
@@ -65,33 +64,46 @@ class MessangerServer(BaseHTTPRequestHandler):
         return True
 
     def upload_message(self, data):
-        # username-password/upload_message/channel/message
-        channel, text, _time = data["channel"], data["message"], time.time()
-        database.upload_message(channel_name=channel,
-                                message=Message(_time=_time,
-                                                username=self.username,
-                                                text=text))
-        self.wfile.write(bytes(f"send {text}", "utf-8"))
-        print(text)
-        return True
+        text, channel_id, _time = data["message"], data["channel_id"], time.time()
+        username = data["username"]
+
+        if database.verify_user_access(channel_id=channel_id, username=username):
+            database.upload_message(channel_id=channel_id,
+                                    message=Message(_time=_time,
+                                                    username=self.username,
+                                                    text=text))
+            self.wfile.write(bytes(f"send {text}", "utf-8"))
+            print(text)
+            return
+        else:
+            self.wfile.write(bytes("You don't have access", "utf-8"))
 
     def download_channel(self, data: dict):
-        # username-password/download_channel/channel_name
-        channel_name = data["channel_name"]
-        channel: dict = database.download_channel(channel_name=channel_name)
+        channel_id = data["channel_id"]
+        if database.verify_user_access(channel_id=channel_id, username=data["username"]):
+            channel: dict = database.download_channel(channel_id=channel_id)
 
-        self.wfile.write(bytes(json.dumps(channel), "utf-8"))
-        print(channel)
-        return True
+            self.wfile.write(bytes(json.dumps(channel), "utf-8"))
+            print(channel)
+            return True
+        else:
+            self.wfile.write(bytes("You don't have access", "utf-8"))
 
 
-hostName, serverPort = "localhost", 8080
+hostName, serverPort = "0.0.0.0", 5690
 
-database = DataBase()
+USERS_PATH = "/Users/talkaridi/Desktop/WhatUp/caching/users.json"
+CHANNELS_PATH = "/Users/talkaridi/Desktop/WhatUp/caching/channels.json"
+ID_PATH = "/Users/talkaridi/Desktop/WhatUp/caching/id.txt"
+
+database = DataBase.from_cache(USERS_PATH, CHANNELS_PATH, ID_PATH)
+print(database.channels)
+print(database.users)
 
 
 webServer = HTTPServer((hostName, serverPort), MessangerServer)
 print("Server started http://%s:%s" % (hostName, serverPort))
+print(f"public ip: {socket.gethostbyname(socket.gethostname())}")
 
 try:
     webServer.serve_forever()
