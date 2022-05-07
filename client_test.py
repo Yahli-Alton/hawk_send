@@ -1,5 +1,4 @@
 import requests
-import json
 
 
 session = requests.Session()
@@ -17,12 +16,12 @@ chan_id = int(resp.split("\n")[-1])
 
 print(session.post(url=URL+"upload_message",
                    json={
-                        "channel_id": str(2),
+                        "channel_id": str(chan_id),
                         "message": "hello"
                     }).text)
 
 
 channel = session.get(url=URL + "download_channel",
-                      params={"channel_id": "2"}).json()['channel']
+                      params={"channel_id": str(chan_id)}).json()['channel']
 
 print(channel)
