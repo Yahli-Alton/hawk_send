@@ -10,7 +10,7 @@ from kivy.core.window import Window
 from kivy.uix.scrollview import ScrollView
 
 session = requests.Session()
-URL = "http://127.0.0.1:5690/"
+URL = "http://NickJohnson.pythonanywhere.com/"
 
 
 class ActionsLayout(GridLayout):
