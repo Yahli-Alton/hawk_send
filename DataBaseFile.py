@@ -61,7 +61,10 @@ class Channel(Serializable):
         final_messages = []
         for message in self.messages:
             _time = time.localtime(message.creation_time)
-            time_str = f"data: {_time.tm_year, _time.tm_mon, _time.tm_mday}\nhour: {_time.tm_hour}\nminute: {_time.tm_min}"
+            time_str = {"hour": _time.tm_hour,
+                        "minute": _time.tm_min,
+                        "second": _time.tm_sec,
+                        "date": f"{_time.tm_mon}.{_time.tm_mday}.{_time.tm_year}"}
             final_messages.append({"time": time_str,
                                    "username": message.username,
                                    "text": message.content})

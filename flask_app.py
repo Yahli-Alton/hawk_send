@@ -10,9 +10,9 @@ app = Flask(__name__)
 
 hostname, port = "0.0.0.0", 5690
 
-USERS_PATH = str((Path(__file__).parent / "users.json").absolute())
-CHANNELS_PATH = str((Path(__file__).parent / "channels.json").absolute())
-ID_PATH = str((Path(__file__).parent / "id.txt").absolute())
+USERS_PATH = str((Path(__file__).parent / "caching" / "users.json").absolute())
+CHANNELS_PATH = str((Path(__file__).parent / "caching" / "channels.json").absolute())
+ID_PATH = str((Path(__file__).parent / "caching" / "id.txt").absolute())
 
 database = Database.load_database(USERS_PATH, CHANNELS_PATH, ID_PATH)
 
@@ -88,6 +88,13 @@ def download_channel():
         return {'channel': channel}
     else:
         raise BadCredentials(f'Username not part of channel #{channel_id}')
+
+
+@app.route("/get_user_channel_ids", methods=['GET'])
+def get_user_channel_ids():
+    username = authenticate()
+    return {"channel_names": [database.channels[channel_id].channel_name for channel_id in database.users[username].channel_ids],
+            "channel_ids": database.users[username].channel_ids}
 
 
 if __name__ == '__main__':
