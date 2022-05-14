@@ -22,12 +22,12 @@ class MyGridLayout(GridLayout):
         self.name = TextInput(multiline = True)
         self.add_widget(self.name)
 
-        self.send = button(text = "send", font_size = 25)
+        self.send = Button(text = "send", font_size = 25)
         self.add_widget(self.send)
 
 class MyApp(App):
     def build(self):
-        return Label(text = "Hello World")
+        return MyGridLayout()
 
 if __name__ == "__main__":
     a = MyApp()
