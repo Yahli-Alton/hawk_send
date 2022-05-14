@@ -41,7 +41,6 @@ class Message(TriviallySerializableDataclass):
     username: str
     content: str
 
-
 @dataclass
 class Channel(Serializable):
     usernames: List[str]
