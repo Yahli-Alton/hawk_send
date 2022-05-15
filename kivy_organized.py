@@ -18,8 +18,20 @@ URL = "http://NickJohnson.pythonanywhere.com/"
 
 
 class ActionsLayout(GridLayout):
-
+    """
+    Contains:
+        - Send messages:
+            - message textinput
+            - send button
+        - Create channel:
+            - channel_name textinput
+            - create_channel button
+    """
     def __init__(self, application_object, channel_layout, **kwargs):
+        """
+        :param application_object: Kivy application object
+        :param channel_layout: Kivy layout, in order to refresh
+        """
         super(ActionsLayout, self).__init__(**kwargs)
         self.application_object = application_object
         self.channel_layout = channel_layout
@@ -27,11 +39,18 @@ class ActionsLayout(GridLayout):
 
         self.render()
 
-    def add_widget(self, widget): # noqa
+    def add_widget(self, widget):  # noqa
+        """
+        This function adds widget self.objects_list and then regular kivy.add_widget
+        :param widget: Kivy widget
+        """
         self.objects_list.append(widget)
         GridLayout.add_widget(self, widget)
 
     def render(self):
+        """
+        Renders widgets into self
+        """
         # columns
 
         self.cols = 1
@@ -68,14 +87,23 @@ class ActionsLayout(GridLayout):
         self.add_widget(self.create_channel)
 
     def delete_widgets(self):
+        """
+        Deletes all widgets added
+        """
         for _object in self.objects_list:
             self.remomve_widget(_object)
 
     def refresh(self):
+        """
+        Refreshes the current object to be up-to-date
+        """
         self.delete_widgets()
         self.render()
 
     def send_onpress(self, instance):
+        """
+        Upload_message into server and refreshes message_layout
+        """
         session.post(url=URL + "upload_message",
                      json={
                          "channel_id": self.channel_layout.last_channel_id,
@@ -85,6 +113,9 @@ class ActionsLayout(GridLayout):
         self.message.text = ""
 
     def create_channel_onpress(self, instance):
+        """
+        Creates channel in server and refreshes channel_layout
+        """
         session.post(url=URL + "create_channel",
                      json={"channel_name": self.channel_name_textinput.text,
                            "users": self.channel_name_usernames.text.split(",")})
@@ -92,16 +123,26 @@ class ActionsLayout(GridLayout):
 
 
 class ChannelsLayout(GridLayout):
+    """
+    Contains:
+        [channel_1, channel_2, ......., channel_n]
+    """
     def __init__(self, main_layout, **kwargs):
+        """
+        Initializes the object and calls render
+        :param main_layout: Kivy layout in Kivy App
+        """
         GridLayout.__init__(self, **kwargs)
         self.main_layout = main_layout
         self.objects_list = []
         self.buttons = []
         self.last_widget = None
         self.render()
-        
 
     def render(self):
+        """
+        Renders channels from server.user_channels into self
+        """
         self.cols = 1
 
         print("sending")
@@ -138,43 +179,59 @@ class ChannelsLayout(GridLayout):
 
                 button.bind(on_press=func)
                 self.add_widget(button)
-                
+
                 self.buttons.append(button)
 
-    def add_widget(self, widget): # noqa
+    def add_widget(self, widget):  # noqa
+        """
+        This function adds widget self.objects_list and then regular kivy.add_widget
+        :param widget: Kivy widget
+        """
         self.objects_list.append(widget)
         GridLayout.add_widget(self, widget)
 
     def remove_widgets(self):
+        """
+        This function removes all buttons from self in order for next refresh
+        """
         for button in self.buttons:
             self.remove_widget(button)
-        
+
     def remove_chat(self):
+        """
+        This functions removes_chat in order for next refresh
+        """
         self.main_layout.remove_widget(self.root2)
 
     def refresh(self, remove_chat=True):
+        """
+        This function refreshes Channels: delete and then render
+        :param remove_chat: bool
+        """
         if remove_chat:
             self.remove_chat()
-        
+
         self.remove_widgets()
         self.render()
 
     def refresh_message(self):
+        """
+        This function refreshes only the message_object by new_information from the server
+        """
         if self.last_widget != None:
             self.main_layout.remove_widget(self.last_widget)
-        
+
         self.root2 = ScrollView(size_hint=(0.2, None), size=(Window.width, Window.height))
 
         print(f"last channeld id: {self.channel_id}")
-        
+
         channel_messages = session.get(url=URL + "download_channel",
-                                                   params={"channel_id": self.last_channel_id}).json()['channel']
-        
+                                       params={"channel_id": self.last_channel_id}).json()['channel']
+
         self.root2.add_widget(MessagesLayout(channel_messages))
 
         self.main_layout.add_widget(self.root2)
         self.last_widget = self.root2
-
 
     @property
     def last_channel_id(self):
@@ -182,7 +239,14 @@ class ChannelsLayout(GridLayout):
 
 
 class MessagesLayout(GridLayout):
+    """
+    Layout of all of the channel_messages
+    """
     def __init__(self, channel_messages: list, **kwargs):
+        """
+        This function initalizes and renders MessagesLayout
+        :param channel_messages: a list of all current channel_messages
+        """
         GridLayout.__init__(self, **kwargs)
 
         self.cols = 1
@@ -197,19 +261,26 @@ class MessagesLayout(GridLayout):
 
             if message['time']['date'] == f"{_time.tm_mon}.{_time.tm_mday}.{_time.tm_year}":
                 label = Label(text=
-                            message['username'] + ":" + "\n" + 
-                            message['text'] + "\n" + f"{hour}:{'0' * (2 - len(str(minute)))}{minute}")
+                              message['username'] + ":" + "\n" +
+                              message['text'] + "\n" + f"{hour}:{'0' * (2 - len(str(minute)))}{minute}")
                 label.text_size = label.width, None
             else:
                 label = Label(text=
-                            message['username'] + ":" + "\n" + 
-                            message['time']['date'])
+                              message['username'] + ":" + "\n" +
+                              message['time']['date'])
                 label.text_size = label.width, None
 
             self.add_widget(label)
 
 
 class LoginLayout(GridLayout):
+    """
+    Contains:
+        - username_textinput
+        - password_textinput
+        - Login Button
+        - Signup Button
+    """
     def __init__(self, main_layout, **kwargs):
         super(LoginLayout, self).__init__(**kwargs)
         self.main_layout = main_layout
@@ -233,20 +304,32 @@ class LoginLayout(GridLayout):
         self.add_widget(self.login)
 
         self.signup = Button(text="Signup",
-                            font_size=25)
+                             font_size=25)
         self.signup.bind(on_press=self.signup_func)
         self.add_widget(self.signup)
 
     def login_func(self, instance):
+        """
+        Authorises username and password from username_textinput.text, password_textinput.text
+        :param instance: Kivy regular on_press param
+        """
         session.auth = (self.username_textinput.text, self.password_textinput.text)
         self.continue_app()
 
     def signup_func(self, instance):
+        """
+        Creates new user in the channel from username_textinput.text, password_textinput.text
+        :param instance: Kivy regular on_press param
+        :return:
+        """
         requests.post(url=URL + "create_user",
                       json={"username": self.username_textinput.text, "password": self.password_textinput.text})
 
     def continue_app(self):
-        self.main_layout.remove_widget(self) # noqa
+        """
+        This function removes all of the login widgets and renders the next part -> ChannelsLayout + ActionsLayout
+        """
+        self.main_layout.remove_widget(self)  # noqa
         root = ScrollView(size_hint=(0.3, None), size=(Window.width, Window.height))
         channel_layout = ChannelsLayout(self.main_layout)
         root.add_widget(channel_layout)
@@ -264,7 +347,7 @@ class LoginLayout(GridLayout):
                 pass
 
         Clock.schedule_interval(refresh_func, 0.5)
-
+#       In order to have a flowing conversation, a thread is always auto refreshing the messages and channels
 
 
 class MainLayout(BoxLayout):
@@ -272,17 +355,27 @@ class MainLayout(BoxLayout):
         BoxLayout.__init__(self)
         self.objects_list = []
 
-    def add_widget(self, widget): # noqa
+    def add_widget(self, widget):  # noqa
+        """
+        This function adds widget self.objects_list and then regular kivy.add_widget
+        :param widget: Kivy widget
+        """
         self.objects_list.append(widget)
         BoxLayout.add_widget(self, widget)
 
     def delete_widgets(self):
+        """
+        This function removes all of the objects that were added to this object
+        """
         for object in self.objects_list:
             self.remove_widget(object)
 
 
 class MyApp(App):
     def build(self):
+        """
+        This function builds the main application
+        """
         self.main_layout = MainLayout()
         self.main_layout.add_widget(LoginLayout(self.main_layout))
 
