@@ -11,6 +11,7 @@ from kivy.uix.scrollview import ScrollView
 import threading
 from time import sleep
 from kivy.clock import Clock
+import time
 
 session = requests.Session()
 URL = "http://NickJohnson.pythonanywhere.com/"
@@ -192,11 +193,18 @@ class MessagesLayout(GridLayout):
         for message in channel_messages:
             minute = message['time']['minute']
             hour = message['time']['hour'] + 3
+            _time = time.localtime(time.time())
 
-            label = Label(text=
-                        message['username'] + ":" + "\n" + 
-                        message['text'] + "\n" + f"{hour}:{'0' * (2 - len(str(minute)))}{minute}")
-            label.text_size = label.width, None
+            if message['time']['date'] == f"{_time.tm_mon}.{_time.tm_mday}.{_time.tm_year}":
+                label = Label(text=
+                            message['username'] + ":" + "\n" + 
+                            message['text'] + "\n" + f"{hour}:{'0' * (2 - len(str(minute)))}{minute}")
+                label.text_size = label.width, None
+            else:
+                label = Label(text=
+                            message['username'] + ":" + "\n" + 
+                            message['time']['date'])
+                label.text_size = label.width, None
 
             self.add_widget(label)
 
