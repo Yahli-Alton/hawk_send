@@ -15,13 +15,17 @@ URL = "http://NickJohnson.pythonanywhere.com/"
 
 class ActionsLayout(GridLayout):
 
-    def __init__(self, main_layout, channels_layout, root, **kwargs):
+    def __init__(self, application_object, channel_layout, **kwargs):
         super(ActionsLayout, self).__init__(**kwargs)
-        self.channels_layout = channels_layout
-        self.main_layout = main_layout
-        self.root = root
+        self.application_object = application_object
+        self.channel_layout = channel_layout
+        self.objects_list = []
 
         self.render()
+
+    def add_widget(self, widget): # noqa
+        self.objects_list.append(widget)
+        GridLayout.add_widget(self, widget)
 
     def render(self):
         # columns
@@ -60,56 +64,43 @@ class ActionsLayout(GridLayout):
         self.add_widget(self.create_channel)
 
     def delete_widgets(self):
-        self.remove_widget(self.label1)
-        self.remove_widget(self.label2)
-        self.remove_widget(self.label3)
+        for object in self.objects_list:
+            self.remomve_widget(object)
 
-        self.remove_widget(self.message)
-        self.remove_widget(self.send)
-        self.remove_widget(self.channel_name_usernames)
-        self.remove_widget(self.channel_name_textinput)
-
-        self.remove_widget(self.create_channel)
+    def refresh(self):
+        self.delete_widgets()
+        self.render()
 
     def send_onpress(self, instance):
         session.post(url=URL + "upload_message",
                      json={
-                         "channel_id": self.channels_layout.last_channel_id,
+                         "channel_id": self.channel_layout.last_channel_id,
                          "message": self.message.text
                      })
+        self.channel_layout.refresh()
 
     def create_channel_onpress(self, instance):
         session.post(url=URL + "create_channel",
                      json={"channel_name": self.channel_name_textinput.text,
                            "users": self.channel_name_usernames.text.split(",")})
-
-        self.main_layout.remove_widget(self.root)
-        self.main_layout.remove_widget(self)
-        self.main_layout.remove_widget(self.channels_layout.root2)
-
-        root = ScrollView(size_hint=(0.3, None), size=(Window.width, Window.height))
-        channel_layout = ChannelsLayout(self.main_layout)
-        root.add_widget(channel_layout)
-        self.main_layout.add_widget(root)
-
-        self.delete_widgets()
-        self.render()
-        self.main_layout.add_widget(self)
-        self.root = root
-        self.channels_layout = channel_layout
+        self.channel_layout.refresh()
 
 
 class ChannelsLayout(GridLayout):
     def __init__(self, main_layout, **kwargs):
         GridLayout.__init__(self, **kwargs)
+        self.main_layout = main_layout
+        self.objects_list = []
+        self.render()
 
+    def render(self):
         self.cols = 1
 
         print("sending")
         user_channels_response = session.get(url=URL + "get_user_channel_ids").json()
         user_channel_ids, user_channel_names = user_channels_response["channel_ids"], \
                                                user_channels_response["channel_names"]
-
+        self.size_hint = (0.4, 0.1 * len(user_channel_ids))
         if len(user_channel_ids) > 0:
             self.channel_id = user_channel_ids[0]
             self.last_widget = None
@@ -120,7 +111,7 @@ class ChannelsLayout(GridLayout):
                 def func(instance, channel_name=name, channel_id=id):
 
                     if self.last_widget != None:
-                        main_layout.remove_widget(self.last_widget)
+                        self.main_layout.remove_widget(self.last_widget)
 
                     self.channel_id = channel_id
 
@@ -131,11 +122,23 @@ class ChannelsLayout(GridLayout):
 
                     self.root2.add_widget(MessagesLayout(channel_messages))
 
-                    main_layout.add_widget(self.root2)
+                    self.main_layout.add_widget(self.root2)
                     self.last_widget = self.root2
 
                 button.bind(on_press=func)
                 self.add_widget(button)
+
+    def add_widget(self, widget): # noqa
+        self.objects_list.append(widget)
+        GridLayout.add_widget(self, widget)
+
+    def remove_widgets(self):
+        self.main_layout.remove_widget(self.last_widget)
+
+    def refresh(self):
+        self.remove_widgets()
+        self.render()
+
 
     @property
     def last_channel_id(self):
@@ -201,15 +204,29 @@ class LoginLayout(GridLayout):
         root.add_widget(channel_layout)
         self.main_layout.add_widget(root)
 
-        self.main_layout.add_widget(ActionsLayout(self.main_layout, channel_layout, root))
+        self.main_layout.add_widget(ActionsLayout(self.main_layout, channel_layout))
+
+
+class MainLayout(BoxLayout):
+    def __init__(self):
+        BoxLayout.__init__(self)
+        self.objects_list = []
+
+    def add_widget(self, widget): # noqa
+        self.objects_list.append(widget)
+        BoxLayout.add_widget(self, widget)
+
+    def delete_widgets(self):
+        for object in self.objects_list:
+            self.remove_widget(object)
 
 
 class MyApp(App):
     def build(self):
-        main_layout = BoxLayout()
-        main_layout.add_widget(LoginLayout(main_layout))
+        self.main_layout = MainLayout()
+        self.main_layout.add_widget(LoginLayout(self.main_layout))
 
-        return main_layout
+        return self.main_layout
 
 
 if __name__ == "__main__":
