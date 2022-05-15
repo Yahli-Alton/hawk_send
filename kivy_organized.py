@@ -147,8 +147,14 @@ class ChannelsLayout(GridLayout):
     def remove_widgets(self):
         for button in self.buttons:
             self.remove_widget(button)
+        
+    def remove_chat(self):
+        self.main_layout.remove_widget(self.root2)
 
-    def refresh(self):
+    def refresh(self, remove_chat=True):
+        if remove_chat:
+            self.remove_chat()
+        
         self.remove_widgets()
         self.render()
 
@@ -184,7 +190,12 @@ class MessagesLayout(GridLayout):
         self.size_hint = (1, len(channel_messages) * 0.15)
 
         for message in channel_messages:
-            label = Label(text=message['text'] + "\n" + f"{message['time']['hour']}:{message['time']['minute']}")
+            minute = message['time']['minute']
+            hour = message['time']['hour'] + 3
+
+            label = Label(text=
+                        message['username'] + ":" + "\n" + 
+                        message['text'] + "\n" + f"{hour}:{'0' * (2 - len(str(minute)))}{minute}")
             label.text_size = label.width, None
 
             self.add_widget(label)
@@ -237,11 +248,13 @@ class LoginLayout(GridLayout):
 
         def refresh_func(instance, channel_layout=channel_layout):
             try:
+                last_channel_id = channel_layout.last_channel_id
+                channel_layout.refresh()
+                channel_layout.channel_id = last_channel_id
                 channel_layout.refresh_message()
             except:
                 pass
 
-        input("?:")
         Clock.schedule_interval(refresh_func, 0.5)
 
 
