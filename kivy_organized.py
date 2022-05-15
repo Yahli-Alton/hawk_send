@@ -8,6 +8,9 @@ from kivy.uix.button import Button
 import requests
 from kivy.core.window import Window
 from kivy.uix.scrollview import ScrollView
+import threading
+from time import sleep
+from kivy.clock import Clock
 
 session = requests.Session()
 URL = "http://NickJohnson.pythonanywhere.com/"
@@ -64,8 +67,8 @@ class ActionsLayout(GridLayout):
         self.add_widget(self.create_channel)
 
     def delete_widgets(self):
-        for object in self.objects_list:
-            self.remomve_widget(object)
+        for _object in self.objects_list:
+            self.remomve_widget(_object)
 
     def refresh(self):
         self.delete_widgets()
@@ -77,7 +80,8 @@ class ActionsLayout(GridLayout):
                          "channel_id": self.channel_layout.last_channel_id,
                          "message": self.message.text
                      })
-        self.channel_layout.refresh()
+        self.channel_layout.refresh_message()
+        self.message.text = ""
 
     def create_channel_onpress(self, instance):
         session.post(url=URL + "create_channel",
@@ -91,7 +95,10 @@ class ChannelsLayout(GridLayout):
         GridLayout.__init__(self, **kwargs)
         self.main_layout = main_layout
         self.objects_list = []
+        self.buttons = []
+        self.last_widget = None
         self.render()
+        
 
     def render(self):
         self.cols = 1
@@ -113,31 +120,53 @@ class ChannelsLayout(GridLayout):
                     if self.last_widget != None:
                         self.main_layout.remove_widget(self.last_widget)
 
+                    print(channel_id)
                     self.channel_id = channel_id
+                    print(self.channel_id)
 
                     channel_messages = session.get(url=URL + "download_channel",
                                                    params={"channel_id": channel_id}).json()['channel']
 
                     self.root2 = ScrollView(size_hint=(0.2, None), size=(Window.width, Window.height))
 
-                    self.root2.add_widget(MessagesLayout(channel_messages))
+                    self.last_channel_widget = MessagesLayout(channel_messages)
+                    self.root2.add_widget(self.last_channel_widget)
 
                     self.main_layout.add_widget(self.root2)
                     self.last_widget = self.root2
 
                 button.bind(on_press=func)
                 self.add_widget(button)
+                
+                self.buttons.append(button)
 
     def add_widget(self, widget): # noqa
         self.objects_list.append(widget)
         GridLayout.add_widget(self, widget)
 
     def remove_widgets(self):
-        self.main_layout.remove_widget(self.last_widget)
+        for button in self.buttons:
+            self.remove_widget(button)
 
     def refresh(self):
         self.remove_widgets()
         self.render()
+
+    def refresh_message(self):
+        if self.last_widget != None:
+            self.main_layout.remove_widget(self.last_widget)
+        
+        self.root2 = ScrollView(size_hint=(0.2, None), size=(Window.width, Window.height))
+
+        print(f"last channeld id: {self.channel_id}")
+        
+        channel_messages = session.get(url=URL + "download_channel",
+                                                   params={"channel_id": self.last_channel_id}).json()['channel']
+        
+        self.root2.add_widget(MessagesLayout(channel_messages))
+
+        self.main_layout.add_widget(self.root2)
+        self.last_widget = self.root2
 
 
     @property
@@ -150,12 +179,12 @@ class MessagesLayout(GridLayout):
         GridLayout.__init__(self, **kwargs)
 
         self.cols = 1
-        self.pos_hint = {"center_x": 0, "center_y": 0.5}
+        self.pos_hint = {"center_x": 0.1, "center_y": 0.5}
 
-        self.size_hint = (0.5, len(channel_messages) * 0.15)
+        self.size_hint = (1, len(channel_messages) * 0.15)
 
         for message in channel_messages:
-            label = Label(text=message['text'] + "\n" + f"{message['time']['hour']}:{message['time']['minute']}:{message['time']['second']}" + "\n" + message["username"])
+            label = Label(text=message['text'] + "\n" + f"{message['time']['hour']}:{message['time']['minute']}")
             label.text_size = label.width, None
 
             self.add_widget(label)
@@ -205,6 +234,16 @@ class LoginLayout(GridLayout):
         self.main_layout.add_widget(root)
 
         self.main_layout.add_widget(ActionsLayout(self.main_layout, channel_layout))
+
+        def refresh_func(instance, channel_layout=channel_layout):
+            try:
+                channel_layout.refresh_message()
+            except:
+                pass
+
+        input("?:")
+        Clock.schedule_interval(refresh_func, 0.5)
+
 
 
 class MainLayout(BoxLayout):
